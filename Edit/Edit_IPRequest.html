@@ -1,0 +1,473 @@
+Content-Type: text/html
+
+<!DOCTYPE html PUBLIC  "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=gb2312" />
+        <title>IP Registration Request Tool</title>
+        <link rel="stylesheet" href="css/table_new.css" />
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
+        <style>
+          table:not(:first-child){
+             border: 2px solid #BFBFBF;
+          }
+          th{
+              text-align: center;
+              white-space: normal !important;
+          }
+          label{
+              width: 200px;
+              clear: left;
+              padding-right:10px;
+          }
+          input,select,option{
+              padding:    3px;
+          }
+          input,select,option,label{
+              float:left;
+          }
+          table.services{
+              border: 1px solid #BFBFBF;
+              min-width: 99px;
+              width:700px;
+              max-width: 700px;
+              height:100px;
+              display: inline-table;
+          }
+          table:not(:first-child) td{
+              border: 1px solid #BFBFBF;
+              text-align:center;
+              vertical-align:middle;
+          }
+          .services th{
+              border: 1px solid #BFBFBF;
+          }
+          .underline{
+              border-top:1px solid #BFBFBF;
+          }
+          #Environment{
+              color:#666699;
+              border:none;
+              text-align:center;
+          }
+          .error{
+              border: 1px solid #cc0000;
+          }
+          #error p{
+              padding: 10px;
+              background-color: #FFCCCC;
+          }
+        </style>
+        <script>
+          //GETS login name and Region/Service Name from CGI script
+          var current_region = "{{region|safe}}"
+          var current_serviceName = "{{form_service_name|safe}}"
+          var current_customerName = "{{res[4]|safe}}"
+          var current_serviceGroup = "{{service_group|safe}}"
+          var current_customerID = "{{res[5]|safe}}"
+          var form_submitted = "{{status}}"
+          var blocked_ips = {{blocked_ipAddress|safe}}
+
+
+
+          //PASSES along data structure to page
+          var service_dictionary = {{js_service_dictionary|safe}}
+          var services = []
+          //CREATES array for services
+          for(var service_group in service_dictionary){
+            services.push(service_group)
+          }
+
+          function errorhandler(obj){
+            var submit_btn = document.getElementsByName("submit")
+            var errorElement = document.createElement('p');
+            switch(obj.name){
+              //CODE
+              case 'Name':
+                var error = 'No <strong>User</strong> specified.'
+                break;
+              case 'Region':
+                var error = 'No <strong>Region</strong> specified.'
+                break;
+              case 'ServiceName':
+                var error = 'No <strong>Service Environment</strong> specified.'
+                break;
+              case 'CustomerName':
+                var error = 'No <strong>Customer Name</strong> specified.'
+                break;
+              case 'Type':
+                var error = 'No <strong>Service Type</strong> specified.'
+                break;
+              default:
+                var error = 'There is some error with the values entered. Please re-check the inputs and let US Network Services about this error.'
+                break;
+              }
+
+             errorElement.innerHTML = error
+             $('#error').append(errorElement)
+
+             $(submit_btn).click(function(e){
+                e.preventDefault();
+              })
+             }
+
+            function validIP(ip_address, e){
+              var new_ip = ''
+              var parts = ip_address.split('.')
+              truthFalse_val = true
+              for(var i = 0; i<parts.length;i++){
+                var part = parts[i]
+                if (part<100 && part >= 10){
+                  part = '0'+part
+                }else if(part <10){
+                  part = '00'+part
+                }else{
+                  part = part
+                }
+                if(i==3){
+                  new_ip +=part
+                }else{
+                  new_ip +=part+'.'
+                }
+              }
+              //CHECKS if any IP is a Private IP
+              if(new_ip>='010.000.000.000' && new_ip<='010.255.255.255'){
+                e.preventDefault()
+                truthFalse_val= false
+              }
+              if(new_ip>='172.016.000.000' && new_ip<='172.031.255.255'){
+                e.preventDefault()
+                truthFalse_val= false
+              }
+              if(new_ip>='192.168.000.000' && new_ip<='192.168.255.255'){
+                e.preventDefault()
+                truthFalse_val= false
+              }
+              for(var j = 0 ; j<blocked_ips.length;j++){
+                if(new_ip>=blocked_ips[j]+'000' && new_ip<=blocked_ips[j]+'255'){
+                  e.preventDefault()
+                  truthFalse_val= false
+                }
+              }
+              if (truthFalse_val == false){
+                e.preventDefault();
+              }
+              return truthFalse_val
+            }
+
+
+            $(document).ready(function(){
+              if(form_submitted=="True"){
+                window.location.href = window.location.href
+              }
+              //DYNAMICALLY adds the options for
+              serviceName_select = document.getElementById('ServiceName');
+              for(var service_group in services){
+                var option = document.createElement('option')
+                option.text = services[service_group]
+                serviceName_select.add(option)
+              }
+
+              $('input[type="submit"]').click(function(e){
+                $('#error').empty();
+                var user_submitted = document.getElementById('Name');
+                var servicename_submitted = document.forms['request_form']['ServiceName'];
+                var customername_submitted = document.forms['request_form']['CustomerName'];
+                var servicetype_submitted = $('td[name="Type"]')
+
+                if(user_submitted.innerHTML == ""){
+                  $(user_submitted).addClass("error")
+                  errorhandler(user_submitted)
+                }else{
+                  $(user_submitted).removeClass("error")
+                }
+                if(region.value == "Select"){
+                  $(region).addClass("error")
+                  errorhandler(region)
+                }else{
+                  $(region).removeClass("error")
+                }
+                if(servicename_submitted.value == "Select"){
+                  $(servicename_submitted).addClass("error")
+                  errorhandler(servicename_submitted)
+                }else{
+                  $(servicename_submitted).removeClass("error")
+                }
+                if(customername_submitted.value == ""){
+                  $(customername_submitted).addClass("error")
+                  errorhandler(customername_submitted)
+                  e.preventDefault()
+                }else{
+                  $(customername_submitted).removeClass("error")
+                }
+                if($('td[name="Type"]').find('input:checked').length == 0){
+                  var serviceselection_error_p = document.createElement('p');
+                  serviceselection_error_p.innerHTML = 'No <strong>Service Type</strong> specified'
+                  $('#error').append(serviceselection_error_p);
+
+                    $('input[name="ServiceType"]').css('outline','1px solid #cc0000')
+                    e.preventDefault();
+                }else{
+                  $('input[name="ServiceType"]').css('outline','0px solid #cc0000')
+                }
+
+                //CHECKS IP for errors
+                var all_first_ip = document.getElementsByName('FirstIP');
+                var all_last_ip = document.getElementsByName('LastIP');
+                var regex_ex_ip = /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/
+
+                //Checks ip to see if valid
+                for(count=0; count < all_first_ip.length ; count++){
+                  //CHECKS if ip in unusable range
+                  var realCount = count+1
+                  var parts = all_first_ip[count].value.split('.');
+
+                  //Sets TO == to FOR if there is no for.
+                  if ( (all_last_ip[count].value == "To" || all_last_ip[count].value == '')&& all_first_ip[count].value != "From"){
+                    all_last_ip[count].value = all_first_ip[count].value;
+                  }
+
+                  var isValid = validIP(all_first_ip[count].value,e)
+                  var isValid_2 = validIP(all_last_ip[count].value,e)
+                  if(!regex_ex_ip.test(all_first_ip[count].value) || !isValid || !isValid_2){
+                    var ipaddress_error_p = document.createElement('p');
+                    $(ipaddress_error_p).html('')
+                    ipaddress_error_p.innerHTML = 'Invalid/No <strong>'+realCount+': From IP</strong> entered'
+                    $('#error').append(ipaddress_error_p);
+                    $(all_first_ip[count]).addClass('error')
+
+                    e.preventDefault();
+                  }else{
+                    $('p:contains("Invalid/No <strong>'+realCount+': From IP</strong> entered")'  ).remove()
+                    $(all_first_ip[count]).removeClass('error')
+                  }
+                  if(!regex_ex_ip.test(all_last_ip[count].value) || !isValid || !isValid_2){
+                    var ipaddress_error_p = document.createElement('p');
+                    $(ipaddress_error_p).html('')
+                    ipaddress_error_p.innerHTML = 'Invalid/No <strong>'+realCount+': To IP</strong> entered'
+                    $('#error').append(ipaddress_error_p);
+                    $(all_last_ip[count]).addClass('error')
+
+                    e.preventDefault();
+                  }else{
+                    $('p:contains("Invalid/No <strong>'+realCount+': To IP</strong> entered")').  remove()
+                    $(all_last_ip[count]).removeClass('error')
+                  }
+                  //CHECKS if To-IP is > than From-IP
+                  var all_arr_first = all_first_ip[count].value.split('.').map(function(x){return parseInt(x)})
+                  var all_arr_last = all_last_ip[count].value.split('.').map(function(x){return parseInt(x)})
+                  for(a=0;a<4;a++){
+                    if(all_arr_first[a]> all_arr_last[a]){
+                      var ipaddress_error_p = document.createElement('p');
+                      $(ipaddress_error_p).html('')
+                      ipaddress_error_p.innerHTML = '<strong>From IP '+realCount+'</strong> is greater than <strong>To IP '+realCount+'</strong>'
+                      $('#error').append(ipaddress_error_p);
+                      $(all_first_ip[count]).addClass('error')
+                      $(all_last_ip[count]).addClass('error')
+                      e.preventDefault();
+                    }
+                  }
+                }
+              });
+              //SET value that was selected after form submission
+              var region = document.getElementById("Region");
+              region.value = current_region;
+
+              var name = document.getElementById("ServiceName");
+              name.value = current_serviceName;
+
+              var CoName = document.getElementById("CustomerName");
+              CoName.value = current_customerName;
+
+              var CoID = document.getElementById("CustomerID");
+              CoID.value = current_customerID;
+            })
+
+            function addField(){
+              $('#source_destination_ip .row:last').after('<tr class="row"><td><input type="checkbox" name="addOrRemove" value="add" onclick="oneClick(this)" checked></td><td><input type="checkbox" name="addOrRemove" value="remove" onClick="oneClick(this)"></td><td><input type="text" name="FirstIP"  value="From"></td><td><input type="text" name="LastIP" value="To"></td>');
+            }
+
+            function removeField(){
+              if($('#source_destination_ip .row').length>1){
+                $('#source_destination_ip .row:last').remove();
+              }
+            }
+
+
+            function formHandler(obj){
+                obj.form.submit();
+                $("#ServiceName").removeAttr('disabled')
+            }
+            //ONLY one checkbo is clicked
+            function oneClick(obj){
+              if(obj.value == "add"){
+                nextCheckbox = $(obj).parent().next().has(":checkbox").find(":checkbox")
+                if(obj.checked){
+                  $(nextCheckbox).attr('checked',false)
+                }else{
+                  obj.checked = true
+                }
+              }
+              else if(obj.value == "remove"){
+                prevCheckbox = $(obj).parent().prev().has(":checkbox").find(":checkbox")
+                if(obj.checked){
+                  $(prevCheckbox).attr('checked',false)
+                }else{
+                  obj.checked = true;
+                }
+              }
+            }
+       </script>
+    </head>
+    <body>
+    {% if req_id and submit_btn == ''%}
+      <table><tr><td id="main">
+          <a href='View_IPRequest.cgi'>Back</a>
+          <form name = "request_form" action = 'Edit_IPRequest.cgi?req_id={{ req_id }}' method = "post">
+          <h1 style = "text-align:center;">Global External Customer IP Address Registration Request Edit </h1>
+          <h3 style = "text-align:center;">Built by Network Services</h3>
+          </br></br>
+          </br></br></br>
+          <strong>* Required Fields</strong>
+          </br></br>
+          <div id="error" class = 'errordiv'></div>
+          <label for="timestamp">Submission Date:</label>
+          <span id="timestamp">{{res[1]}}</span>
+          </br></br></br>
+
+          <label for="Name">Submitter:</label>
+              <span id="Name">{{ res[3] }}</span>
+          </br></br></br>
+
+          <label for="Status">Status:</label>
+          <select name="Status" id="Status">
+                          <option default disabled>Select></option>
+                          <option>Submitted</option>
+                          <option>On Hold</option>
+                          <option>Completed</option>
+          </select>
+          </br></br></br>
+
+          <label for="Region">Region:*</label>
+          <select name="Region" id="Region" onChange="formHandler(this)">
+            <option default disabled>Select</option>
+            <option>US</option>
+            <option>EU</option>
+            <option>JP</option>
+          </select>
+          </br></br></br>
+
+          <label for="ServiceName">Business Unit:*</label>
+          <select name="ServiceName" id="ServiceName" onChange="formHandler(this);">
+            <option default disabled>Select</option>
+
+          </select>
+          </br></br></br>
+
+          <label for="CustomerName">Customer Name:*</label>
+          <input id="CustomerName" name="CustomerName" type="text">
+          </br></br></br>
+
+          <label for="CustomerID">Customer ID:</label>
+          <input id="CustomerID" name="CustomerID" type="text">
+          </br></br></br>
+
+          {% for system in service_dictionary %}
+          {% if system == form_service_name %}
+          <table class="services">
+            <tr>
+              <th>Environment</th>
+              <th>Service Name</th>
+              <th colspan=20>Type*</th>
+            </tr>
+            <tr>
+              <td rowspan = {{service_dictionary[system]|length +1 }}>{{ system }}</td>
+            </tr>
+            {% for env in service_dictionary[system] %}
+            <tr style="text-align:center;vertical-align:center;">
+              <td name="Environment">{{env}}</td>
+              <td name="Type"></br>
+              {% for type in service_dictionary[system][env] %}
+              {% set curr_type = env+' '+type %}
+                  <input type="checkbox" name="ServiceType" value="{{env}} {{type}}"
+                      {% for service in service_res %}
+                      {% if service == env+' '+type %}
+                          checked
+                      {% endif %}
+                      {% endfor %}
+                  >{{type}}</br></br>
+
+              {% endfor %}
+              </td>
+            </tr>
+            {% endfor %}
+          </table>
+          {% endif %}
+          {% endfor %}
+          </br></br></br>
+
+          <strong>IP Address to be Added/Deleted on Firewall: *** IPs in the following ranges may not be registered</br>
+          Private IPs: 10.0.0.0 - 10.255.255.255 ; 172.16.0.0 - 172.32.255.255 ; 192.168.0.0 - 192.168.255.255</br></br>Blocked IPs:{% for ip_add in blocked_ipAddress %}
+          {% if ip_add[0] == '0' %}
+            {{ip_add[1:]+'*'}}
+          {% else %}
+            {{ip_add+'*'}}
+            {% endif %}
+          {%endfor%}
+
+          </strong>
+          <div class='underline'></div>
+          <table id="source_destination_ip">
+            <tr>
+              <th>Add</th>
+              <th>Remove</th>
+              <th>From</th>
+              <th>To</th>
+            </tr>
+            {% set cur_servID = res2[0][3] %}
+            {% for addresses in res2 %}
+            {% if cur_servID == addresses[3] and addresses[4] != "Remove"%}
+            <tr class="row">
+              {% if addresses[4] == 'Add' and addresses[3] == cur_servID %}
+              <td><input type="checkbox" name="addOrRemove" id="add_ip" value="add" checked onclick="oneClick(this)"></td>
+              {% else  %}
+              <td><input type="checkbox" name="addOrRemove" id="add_ip" value="add" onclick="oneClick(this)"></td>
+              {% endif %}
+              {% if addresses[4] == 'Remove' %}
+              <td><input type="checkbox" name="addOrRemove" id="remove_ip" value="remove" checked onclick="oneClick(this)"></td>
+              {% else %}
+              <td><input type="checkbox" name="addOrRemove" id="remove_ip" value="remove" onclick="oneClick(this)"></td>
+              {% endif %}
+              {% if addresses[3] == cur_servID %}
+              <input type="hidden" name="ip_index" value="{{ addresses[5] }}">
+              <td><input type="text" name="FirstIP" placeholder="From" value="{{ addresses[1] }}"></td>
+              <td><input type="text" name="LastIP"  placeholder="To" value="{{addresses[2]}}"></td>
+              {% endif %}
+            </tr>
+            {% set cur_servID = addresses[3] %}
+
+
+            {% endif %}
+            {% endfor %}
+            </table>
+            <button style="margin-left:10px;" type="button" onclick="addField()"><strong>+</strong></button>
+            <button style="margin-left:10px;" type="button" onclick="removeField(this)"><strong>-</strong></button>
+
+            </br></br></br>
+            <input type="submit" value="Submit" name="Submit">
+          </form>
+        </td></tr>
+    </table>
+
+    {% elif not req_id and submit_btn == '' %}
+    <strong><h1>Woops! Seems like you landed on this page by accident.</h1><h3c class="defaultText">Please let Network Services know about this, along with what you did to get this error.</h3></strong>
+    {% endif %}
+    {% if submit_btn == 'Submit' and req_id %}
+      <h3 class="defaultText">
+        Changes Submitted!
+      </h3>
+      <a href="View_IPRequest.cgi">Return to View Requests</a>
+    {% endif %}
+    </body>
+</html>

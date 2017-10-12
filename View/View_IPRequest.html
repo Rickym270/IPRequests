@@ -1,0 +1,143 @@
+Content-Type: text/html
+
+<!DOCTYPE html PUBLIC  "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=gb2312" />
+    <title>IP Services Search Tool</title>
+    <link rel="stylesheet" href="../REPORTS/css/table_new.css" />
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
+    <style>
+      label{
+        width: 200px;
+        clear: left;
+        padding-right:10px;
+      }
+      input,select,option{
+        padding:    3px;
+      }
+      input,select,option,label{
+        float:left;
+      }
+    </style>
+    <script>
+      var submission_year = "{{ dateInformation['Year'] }}"
+      var submission_month = "{{ dateInformation['Month'] }}"
+      var submission_day = "{{ dateInformation['Day'] }}"
+      var submission_region = "{{ formInformation['Region'] }}"
+
+      $(document).ready(function(){
+        var year = document.getElementById("SearchYear");
+        var month = document.getElementById("SearchMonth");
+        var day = document.getElementById("SearchDay");
+        var region = document.getElementById("Region")
+
+        //SET value after submission
+        year.value = submission_year;
+        month.value = submission_month;
+        day.value = submission_day;
+        region.value = submission_region;
+      });
+
+      function FormHandler(obj){
+        obj.form.submit();
+      }
+    </script>
+  </head>
+    <body>
+      <h2 class='defaultText' style = "text-align:center">Global External Customer IP Address Registration Lookup</h2>
+      <h4 class='defaultText' style = "text-align:center;">Built by Network Services</h3>
+      </br></br></br>
+
+      <form id="RequestReports" name="RequestReports" action="View_IPRequest.cgi" method="post">
+        <label class='defaultText' for="SearchDate">Submission Date:</label>
+        <select name='SearchYear' id='SearchYear' class="DateSearch" onchange="FormHandler(this)" autocomplete="off">
+          <option selected>Year</option>
+          {% for i in range(2017,year+1) %}
+            <option>{{i}}</option>
+          {% endfor %}
+        </select>
+
+        <select name='SearchMonth' id='SearchMonth' class="DateSearch" onchange="FormHandler(this)" autocomplete="off" {{disabled_m}}>
+          <option selected>Month</option>
+          {% for i in range(1,13) %}
+            <option>{{i}}</option>
+          {% endfor %}
+        </select>
+
+        <select name='SearchDay' id='SearchDay' class="DateSearch" onchange="FormHandler(this)" autocomplete="off"{{disabled_d}}>
+          <option selected>Day</option>
+          {% if dateInformation["LastDay"] %}
+          {% for i in range(1,dateInformation["LastDay"]+1) %}
+            <option>{{i}}</option>
+          {% endfor %}
+          {% endif %}
+        </select>
+
+        </select>
+        </br></br>
+
+        <label class='defaultText' for="Submitter">Submitter:</label>
+        <input name="Submitter" id="Submitter" type="text">
+        </br></br>
+
+        <label class='defaultText' for='Region'>Submission Region:</label>
+        <select name="Region" id="Region">
+          <option selected>Select</option>
+          <option>US</option>
+          <option>EU</option>
+          <option>JP</option>
+        </select>
+        </br></br>
+
+        <label class = 'defaultText' for='CompanyName'>Company Name:</label>
+        <input name="CompanyName" id="CompanyName" type="text">
+        </br></br>
+
+        <label class= 'defaultText' for='Status'>Status:</label>
+        <select name="Status" id="Status">
+          <option selected>Select</option>
+          <option>Submitted</option>
+          <option>Completed</option>
+        </select>
+        </br></br>
+
+        <input type="submit" value="Search" name="Submit">
+        <input type="button" onClick="location.href='Create_IPRequest.cgi';" value="Create Request">
+        <input type="reset" value="Clear Form">
+
+      </form>
+      </br></br></br>
+      {% if result["data"] %}
+      <table id="chart" style="width:60%">
+        <tr>
+          <th>Request ID</th>
+          <th>Time</th>
+          <th>Submitter</th>
+          <th>Company ID</th>
+          <th>Company Name</th>
+          <th>Region</th>
+          <th>Status</th>
+          <th>Edit</th>
+        </tr>
+        {% for data in result["data"] %}
+        <tr>
+          <td>{{data['RequestID']}}</td>
+          <td>{{data['Timestamp']}}</td>
+          <td>{{data['Submitter']}}</td>
+          <td>{{data['CompanyID']}}</td>
+          <td>{{data['CompanyName']}}</td>
+          <td>{{data['Region']}}</td>
+          <td>{{data['Status']}}</td>
+          {% if data['Status'] != 'Completed' %}
+          <td><a style="text-decoration:underline;" href="Edit_IPRequest.cgi?req_id={{data['RequestID']}}">Edit</a></td>
+          {% else %}
+          <td></td>
+          {% endif %}
+        </tr>
+        {% endfor %}
+      </table>
+      {% endif %}
+    </body>
+</html>
