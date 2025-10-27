@@ -1,131 +1,99 @@
 # IPRequests
 
-A lightweight toolkit for making, logging, and analyzing IP-based HTTP requests. IPRequests provides utilities and/or a small CLI and library interface to issue requests bound to specific source IPs, collect metadata, perform IP lookups, and generate reports. This README is a starting template — if you share the repo's main language/files I can adapt the commands and examples to match the implementation.
+A small CGI-backed web UI that accepts HTTP request parameters from HTML forms, performs IP-based request actions on the server, and returns/logs results. The project uses classic CGI + HTML forms to collect fields in the browser and execute server-side logic from the Create / Edit / View UI directories.
 
-Status: WIP
+Status: Prototype / WIP
 
-## Table of contents
-- [Overview](#overview)
-- [Features](#features)
-- [Requirements](#requirements)
-- [Installation](#installation)
-- [Usage](#usage)
-  - [Command Line (CLI)](#command-line-cli)
-  - [Library (programmatic)](#library-programmatic)
-- [Configuration](#configuration)
-- [Examples](#examples)
-- [Development](#development)
-- [Contributing](#contributing)
-- [License](#license)
-- [Contact](#contact)
+## Quick overview
+IPRequests provides a lightweight web frontend (HTML forms) and server-side CGI handlers that:
+- take user-supplied input from form fields,
+- perform network/request-related actions server-side (e.g., issue HTTP requests, run lookups, or log metadata),
+- present results and let users create, edit, and view saved requests or reports.
 
-## Overview
-IPRequests helps you run HTTP requests that are tied to particular IP addresses or interfaces, capture request/response metadata, and perform common IP-related lookups (geolocation, ASN, reverse DNS). It is ideal for network testing, monitoring, and experimenting with multi-homed hosts or VPN/proxy setups.
+The repository is organized with three top-level UI handler directories:
+- Create/ — UI and CGI for creating new requests or request definitions
+- Edit/ — UI and CGI for modifying existing requests or saved entries
+- View/ — UI and CGI for viewing results, status, or logs
 
 ## Features
-- Make HTTP(S) requests from a specific source IP or network interface
-- Capture full request/response logs (headers, body, timing)
-- Optional support for parallel requests and rate limiting
-- Built-in lookups: geolocation, ASN, reverse DNS (pluggable providers)
-- Exportable reports (JSON/CSV)
-- Simple CLI and programmatic library API
+- HTML form-driven UI for issuing requests and collecting parameters
+- CGI handlers that receive form POST/GET data and perform the server-side operations
+- Basic create / edit / view workflow for request records
+- Designed to be simple to deploy on any CGI-capable web server
 
 ## Requirements
-- Operating system: Linux / macOS / Windows (feature parity may vary)
-- [List runtime/language requirements here — e.g. Python 3.10+, Go 1.20+, Node 18+]
-- Optional: access to an IP lookup provider API (for geolocation/ASN)
+- A web server with CGI support (Apache with mod_cgi/mod_cgid, Nginx + fcgiwrap, lighttpd, or any compatible server)
+- A working CGI interpreter for the scripts in the repository (Perl, Python, Bash, PHP, or whatever the repository's scripts use)
+- Appropriate file permissions to execute CGI scripts (executable bit set)
+- Optional: network access for any external IP lookups or outgoing HTTP requests the scripts perform
 
-## Installation
-Replace this section with real install steps for the repository language.
+## Install / Deploy (example)
+1. Clone the repository:
+   git clone https://github.com/Rickym270/IPRequests.git
+2. Place the repository or its CGI scripts into your web server's CGI-enabled directory (for example, cgi-bin), or configure the webserver to allow executing CGI in the repo path.
+3. Ensure CGI scripts are executable:
+   chmod +x *.cgi *.pl *.py
+4. Configure your web server to allow POST/GET to the relevant directories, and restart the server.
+   - Apache example (in a VirtualHost):
+     <Directory "/var/www/html/IPRequests">
+       Options +ExecCGI
+       AddHandler cgi-script .cgi .pl .py
+     </Directory>
+5. Navigate to the Create/ or View/ pages in your browser to use the UI.
 
-Example (Python, pip):
-```bash
-pip install iprequests
-```
-
-Example (clone + from source):
-```bash
-git clone https://github.com/<owner>/IPRequests.git
-cd IPRequests
-# language-specific build instructions
-```
-
-Docker:
-```bash
-docker build -t iprequests .
-docker run --rm iprequests --help
-```
+Local development (quick test using Python's built-in server)
+- Put the CGI scripts into a directory named `cgi-bin` inside the repo root, or keep as-is and serve with:
+  python3 -m http.server --cgi 8000
+- Then open http://localhost:8000/Create/ (or the correct path) in your browser.
 
 ## Usage
+- Fill the HTML form fields on the Create page to define a new request (URL, source IP/interface, headers, method, etc. — field names depend on the repository's forms).
+- Submit the form; the corresponding CGI script will parse the fields (from QUERY_STRING or stdin), execute the action, and return a result page.
+- Use Edit to change saved requests and View to display results or logs.
 
-### Command Line (CLI)
-Example CLI usage (placeholder):
-```bash
-# Send a request using a specific source IP or interface
-iprequests --source-ip 192.0.2.10 --url https://example.com --method GET --output report.json
-```
+Example (conceptual) form snippet:
+<form method="post" action="/Create/submit.cgi">
+  <input name="url" type="text" />
+  <input name="method" value="GET" />
+  <input name="source_ip" />
+  <button type="submit">Send</button>
+</form>
 
-### Library (programmatic)
-Example usage in your language (placeholder):
+The CGI script receives these fields and should:
+- validate and sanitize input,
+- perform the network/request action,
+- record logs and return an HTML response.
 
-Python-like pseudocode:
-```python
-from iprequests import IPRequestClient
+## Security & best practices
+- Never trust form input: validate and sanitize all fields on the server side.
+- Run the CGI processes with least privilege (a dedicated user) and avoid executing shell commands with unsanitized input to prevent command injection.
+- Use HTTPS for the web UI to protect credentials and input in transit.
+- If storing request data or logs, ensure proper file permissions and consider encrypted storage for sensitive data.
+- Add rate limiting and authentication if the UI will be public-facing.
 
-client = IPRequestClient(source_ip="192.0.2.10")
-resp = client.get("https://example.com")
-print(resp.status_code, resp.timing)
-```
-
-Go-like pseudocode:
-```go
-client := iprequests.NewClient(iprequests.WithSourceIP("192.0.2.10"))
-resp, _ := client.Get("https://example.com")
-fmt.Println(resp.StatusCode)
-```
-
-## Configuration
-Provide a config file (YAML/JSON) to set defaults for:
-- default source IP/interface
-- concurrency and rate limits
-- lookup provider keys
-- output formats and paths
-
-Example config.yml:
-```yaml
-source_ip: 192.0.2.10
-concurrency: 5
-lookup_provider:
-  name: ipinfo
-  api_key: YOUR_KEY
-output:
-  format: json
-  path: ./reports
-```
-
-## Examples
-- Run a batch of requests defined in a JSON file and generate a CSV report
-- Use multiple source IPs to validate geo-based behavior of a service
-- Integrate into CI to monitor endpoint accessibility from different network paths
-
-(Concrete example command lines and code snippets will be tailored once the repo language and entry points are known.)
+## File structure (expected / present)
+- Create/ — create form pages and handlers
+- Edit/ — edit form pages and handlers
+- View/ — result / listing pages
+- README.md — (this file)
+(The project may also include supporting libraries, templates, or configuration files — inspect the repository to see file extensions like .cgi, .pl, .py, .html, .css, or .conf.)
 
 ## Development
-- Run tests: replace with project-specific test command (e.g. pytest, go test, npm test)
-- Linting/formatting: replace with project tools (flake8, golangci-lint, eslint)
-- Build: replace with build instructions
+- Inspect and run the CGI scripts locally using a CGI-capable server.
+- Add unit tests where possible (for non-HTTP logic).
+- Consider refactoring repeated CGI parsing and templating logic into a small shared library/module to reduce duplication.
+
+## Troubleshooting
+- If script returns "500 Internal Server Error": check web server error logs, ensure scripts are executable and have the correct shebang (#!) line.
+- If form fields are empty: verify Content-Type header on the form and that the CGI script reads stdin for POST correctly.
+- Use developer tools in the browser and server logs to trace requests.
 
 ## Contributing
-Contributions are welcome! Please:
-1. Open an issue describing your feature/bug.
-2. Create a branch for your change.
-3. Add tests and documentation.
-4. Open a pull request describing the change.
-
-Follow repository CODE_OF_CONDUCT and CONTRIBUTING guidelines if present.
+- Open an issue describing improvements or bugs.
+- Fork, create a branch, add tests and documentation, and submit a PR.
 
 ## License
-Specify license here (e.g. MIT, Apache-2.0). If no license exists, add one to make reuse clear.
+- No license file detected in the repository listing responses. Add a LICENSE file to clarify reuse terms (MIT, Apache-2.0, etc.) if you intend to share.
 
 ## Contact
-Maintainer: @Rickym270 (GitHub)
+Developer/Maintainer: @Rickym270 (GitHub)
