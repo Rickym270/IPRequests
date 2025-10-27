@@ -1,4 +1,3 @@
-```markdown
 # IPRequests
 
 A lightweight toolkit for making, logging, and analyzing IP-based HTTP requests. IPRequests provides utilities and/or a small CLI and library interface to issue requests bound to specific source IPs, collect metadata, perform IP lookups, and generate reports. This README is a starting template — if you share the repo's main language/files I can adapt the commands and examples to match the implementation.
